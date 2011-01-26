@@ -6,6 +6,8 @@ preload_app <%= configuration[:unicorn][:preload_app] ? "true" : "false" %>
 
 timeout <%= configuration[:unicorn][:timeout] %>
 
+pid '<%= configuration[:unicorn][:pid_file] || "#{configuration[:deploy_to]}/shared/pids/unicorn.pid" %>'
+
 listen '<%= configuration[:unicorn][:socket] %>', 
   :backlog => <%= configuration[:unicorn][:socket_backlog] %>
 

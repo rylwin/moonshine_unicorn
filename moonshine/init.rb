@@ -1,3 +1,3 @@
-require "#{File.dirname(__FILE__)}/../lib/unicorn.rb"
+require "#{File.dirname(__FILE__)}/../lib/municorn.rb"
 
 include Unicorn

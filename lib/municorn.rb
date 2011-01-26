@@ -8,6 +8,7 @@ module Moonshine::Manifest::Unicorn
       :workers => 1,
       :preload_app => true,
       :timeout => 60,
+      :binary => "unicorn_rails",
       :socket => "127.0.0.1:#{default_port}",
       :socket_backlog => 1024
     }
@@ -26,10 +27,39 @@ module Moonshine::Manifest::Unicorn
       :alias => "unicorn_config"
   end
   
+  def unicorn_master
+    file "#{configuration[:deploy_to]}/shared/binary/",
+      :ensure => :directory,
+      :owner => configuration[:user],
+      :group => configuration[:group] || configuration[:user],
+      :mode => '775'
+      # disable the old scout_agent
+    file "#{configuration[:deploy_to]}/shared/binary/unicorn",
+      :content => template(File.join(File.dirname(__FILE__), '..', 'templates', 'unicorn.exec'), binding),
+      :owner => configuration[:user],
+      :group => configuration[:group] || configuration[:user],
+      :mode    => '744'
+    file "#{configuration[:deploy_to]}/shared/binary/unicorn_rails",
+      :content => template(File.join(File.dirname(__FILE__), '..', 'templates', 'unicorn_rails.exec'), binding),
+      :owner => configuration[:user],
+      :group => configuration[:group] || configuration[:user],
+      :mode    => '744'
+      
+    file '/etc/init.d/unicorn',
+      :content => template(File.join(File.dirname(__FILE__), '..', 'templates', 'unicorn.init.erb'), binding),
+      :mode    => '744'
+
+    service 'unicorn',
+      :enable  => true,
+      :ensure  => :running,
+      :require => file('/etc/init.d/unicorn')
+  end
+  
   def unicorn_stack
      recipe :apache_server
      recipe :unicorn_site
      recipe :unicorn_config
+     recipe :unicorn_master
      case database_environment[:adapter]
      when 'mysql', 'mysql2'
        recipe :mysql_server, :mysql_gem, :mysql_database, :mysql_user, :mysql_fixup_debian_start
