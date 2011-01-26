@@ -1,0 +1,27 @@
+= Moonshine_Unicorn
+
+=== A plugin for Moonshine[http://github.com/railsmachine/moonshine]
+
+Moonshine_Unicorn provides simple setup of a Rails app using Unicorn[https://github.com/defunkt/unicorn] 
+via Apache's mod_proxy.
+
+=== Instructions
+
+* <tt>script/plugin install git://github.com/yyyc514/moonshine_unicorn.git</tt>
+* Configure unicorn in your manifest or moonshine.yml file:
+		configure(:unicorn => {
+				:workers => 10,
+				:port => 9999,
+				:timeout => 30,
+				:socket_backlog => 2048
+			})
+			
+=== Settings
+
+See unicorn.vhost.erb for specific Apache configuration settings that 
+previously would have been in the :passenger namespace.  Such as:
+
+* <tt>configuration[:unicorn][:vhost_extra]</tt>
+* <tt>configuration[:unicorn][:maintenance_rewrite]</tt>
+* <tt>configuration[:unicorn][:page_cache_directory]</tt>
+* etc
