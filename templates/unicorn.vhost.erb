@@ -13,6 +13,7 @@
 
   <Directory <%= configuration[:deploy_to] + "/current/public" %>>
     Options FollowSymLinks
+    Options -MultiViews
     AllowOverride <%= if configuration[:apache]; configuration[:apache][:allow_override] || 'None'; else 'None'; end %>
     Order allow,deny
     Allow from all
@@ -45,6 +46,22 @@
   </Location>
   <% end %>
 
+  <% if configuration[:assets] %>
+    # Recommendations for asset pipline: http://guides.rubyonrails.org/asset_pipeline.html#in-production
+    <LocationMatch "^/assets/.*$">
+      Header unset ETag
+      FileETag None
+      # RFC says only cache for 1 year
+      ExpiresActive On
+      ExpiresDefault "access plus 1 year"
+    </LocationMatch>
+  <% else %>
+    # Using the Rails Asset pipeline? Enable it with:
+    #
+    #   :assets:
+    #     :enabled: true
+  <% end %>
+
   # Deflate
   <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE <%= configuration[:apache][:gzip_types].join(' ') %>
@@ -52,6 +69,8 @@
     BrowserMatch ^Mozilla/4\.0[678] no-gzip
     BrowserMatch \bMSIE !no-gzip !gzip-only-text/html
   </IfModule>
+
+  RequestHeader set X-Request-Start "%t"
 
   RewriteEngine On
 
@@ -67,9 +86,11 @@
 	<%= configuration[:unicorn][:maintenance_rewrite] %>
 <% else %>
   # Check for maintenance file and redirect all requests
+  ErrorDocument 503 /system/maintenance.html
   RewriteCond %{REQUEST_URI} !\.(css|jpg|png|gif)$
   RewriteCond %{DOCUMENT_ROOT}/system/maintenance.html -f
-  RewriteRule ^.*$ /system/maintenance.html [L]
+  RewriteCond %{SCRIPT_FILENAME} !maintenance.html
+  RewriteRule ^.*$ /system/maintenance.html [R=<%= configuration[:unicorn][:maintenance_status_code] || 503 %>,L]
 <% end %>
 
   # Rewrite index to check for static
@@ -95,7 +116,7 @@
   
   <Proxy balancer://unicorn>
     Allow from all
-    BalancerMember http://127.0.0.1:<%= configuration[:unicorn][:port]%>
+    BalancerMember http://<%= configuration[:unicorn][:socket_ip] %>:<%= configuration[:unicorn][:port]%>
   </Proxy>
 
 
@@ -107,7 +128,7 @@
   RequestHeader set X_FORWARDED_PROTO "https"
 
   SSLEngine on
-  SSLCipherSuite ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP:+eNULL
+  SSLCipherSuite <%= configuration[:ssl][:cipher_suite] || 'ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP:+eNULL' %>
   SSLCertificateFile    <%= configuration[:ssl][:certificate_file] || '/etc/ssl/certs/ssl-cert-snakeoil.pem' %>
   SSLCertificateKeyFile <%= configuration[:ssl][:certificate_key_file] || '/etc/ssl/private/ssl-cert-snakeoil.key' %>
   <% if configuration[:ssl][:certificate_chain_file] %>
@@ -128,8 +149,11 @@
   DocumentRoot <%= configuration[:deploy_to] + "/current/public" %>
 
   <Directory <%= configuration[:deploy_to] + "/current/public" %>>
+    <% if configuration[:unicorn][:limit_except] %>
+      <%= configuration[:unicorn][:limit_except] %>
+    <% end %>
     Options FollowSymLinks
-    AllowOverride None
+    AllowOverride <%= if configuration[:apache]; configuration[:apache][:allow_override] || 'None'; else 'None'; end %>
     Order allow,deny
     Allow from all
     <%= "FileETag #{configuration[:apache][:file_etag]}" if configuration[:apache][:file_etag] %>
@@ -170,6 +194,8 @@
     BrowserMatch \bMSIE !no-gzip !gzip-only-text/html
   </IfModule>
 
+  RequestHeader set X-Request-Start "%t"
+
   RewriteEngine On
 
 <% if configuration[:ssl] %>
@@ -188,9 +214,11 @@
 	<%= configuration[:unicorn][:maintenance_rewrite] %>
 <% else %>
   # Check for maintenance file and redirect all requests
+  ErrorDocument 503 /system/maintenance.html
   RewriteCond %{REQUEST_URI} !\.(css|jpg|png|gif)$
   RewriteCond %{DOCUMENT_ROOT}/system/maintenance.html -f
-  RewriteRule ^.*$ /system/maintenance.html [L]
+  RewriteCond %{SCRIPT_FILENAME} !maintenance.html
+  RewriteRule ^.*$ /system/maintenance.html [R=<%= configuration[:unicorn][:maintenance_status_code] || 503 %>,L]
 <% end %>
 
   # Rewrite index to check for static
@@ -212,7 +240,7 @@
   RewriteRule ^/(.*)$ balancer://unicorn%{REQUEST_URI} [P,QSA,L]
   <Proxy balancer://unicorn>
     Allow from all
-    BalancerMember http://127.0.0.1:<%= configuration[:unicorn][:port]%>
+    BalancerMember http://<%= configuration[:unicorn][:socket_ip] %>:<%= configuration[:unicorn][:port]%>
   </Proxy>
 
   </VirtualHost>
