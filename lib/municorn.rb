@@ -60,38 +60,42 @@ module Moonshine::Manifest::Unicorn
   end
   
   def unicorn_stack
-     recipe :apache_server
-     recipe :unicorn_site
-     recipe :unicorn_config
-     recipe :unicorn_master
-     case database_environment[:adapter]
-     when 'mysql', 'mysql2'
-       recipe :mysql_server, :mysql_gem, :mysql_database, :mysql_user, :mysql_fixup_debian_start
-     when 'postgresql'
-       recipe :postgresql_server, :postgresql_gem, :postgresql_user, :postgresql_database
-     when 'sqlite', 'sqlite3'
-       recipe :sqlite3
-     end
-     recipe :rails_rake_environment, :rails_gems, :rails_directories, :rails_bootstrap, :rails_migrations, :rails_logrotate
-     recipe :ntp, :time_zone, :postfix, :cron_packages, :motd, :security_updates, :apt_sources
+    recipe :apache_server
+    recipe :unicorn_site
+    recipe :unicorn_config
+    recipe :unicorn_master
+    case database_environment[:adapter]
+    when 'mysql', 'mysql2'
+      recipe :mysql_server, :mysql_gem, :mysql_database, :mysql_user, :mysql_fixup_debian_start
+    when 'postgresql'
+      recipe :postgresql_server, :postgresql_gem, :postgresql_user, :postgresql_database
+    when 'sqlite', 'sqlite3'
+      recipe :sqlite3
+    end
+    recipe :rails_rake_environment, :rails_gems, :rails_directories, :rails_bootstrap, :rails_migrations, :rails_logrotate
+    recipe :ntp, :time_zone, :postfix, :cron_packages, :motd, :security_updates, :apt_sources, :hostname
+
+    if configuration[:assets] && (configuration[:assets][:enabled] || configuration[:assets][:precompile])
+      recipe :rails_asset_pipeline
+    end
   end
   
   # Creates and enables a vhost configuration named after your application.
   # Also ensures that the <tt>000-default</tt> vhost is disabled.
   def unicorn_site
-  a2enmod "proxy"
-  a2enmod "proxy_http"
-  a2enmod "proxy_balancer"
-    
-  file "/etc/apache2/sites-available/#{configuration[:application]}",
-    :ensure => :present,
-    :content => template(File.join(File.dirname(__FILE__), '..','templates', 'unicorn.vhost.erb')),
-    :notify => service("apache2"),
-    :alias => "unicorn_vhost",
-    :require => [exec("a2enmod proxy"), exec("a2enmod proxy_balancer")]
+    a2enmod "proxy"
+    a2enmod "proxy_http"
+    a2enmod "proxy_balancer"
+      
+    file "/etc/apache2/sites-available/#{configuration[:application]}",
+      :ensure => :present,
+      :content => template(File.join(File.dirname(__FILE__), '..','templates', 'unicorn.vhost.erb')),
+      :notify => service("apache2"),
+      :alias => "unicorn_vhost",
+      :require => [exec("a2enmod proxy"), exec("a2enmod proxy_balancer")]
 
-  a2dissite '000-default', :require => file("unicorn_vhost")
-  a2ensite configuration[:application], :require => file("unicorn_vhost")
+    a2dissite '000-default', :require => file("unicorn_vhost")
+    a2ensite configuration[:application], :require => file("unicorn_vhost")
   end
   
   private
