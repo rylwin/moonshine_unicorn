@@ -118,6 +118,7 @@
     Allow from all
     BalancerMember http://<%= configuration[:unicorn][:socket_ip] %>:<%= configuration[:unicorn][:port]%>
   </Proxy>
+  ProxyTimeout <%= configuration[:unicorn][:timeout] %>
 
 
 <% end %>
@@ -242,6 +243,7 @@
     Allow from all
     BalancerMember http://<%= configuration[:unicorn][:socket_ip] %>:<%= configuration[:unicorn][:port]%>
   </Proxy>
+  ProxyTimeout <%= configuration[:unicorn][:timeout] %>
 
   </VirtualHost>
 <% end %>
