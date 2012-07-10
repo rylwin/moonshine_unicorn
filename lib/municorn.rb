@@ -8,7 +8,7 @@ module Moonshine::Manifest::Unicorn
       :workers => 1,
       :preload_app => true,
       :timeout => 60,
-      :binary => "unicorn_rails",
+      :binary => "unicorn",
       :socket_ip => "127.0.0.1",
       :socket_backlog => 1024
     }
