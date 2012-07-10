@@ -9,7 +9,7 @@ module Moonshine::Manifest::Unicorn
       :preload_app => true,
       :timeout => 60,
       :binary => "unicorn_rails",
-      :socket => "127.0.0.1:#{default_port}",
+      :socket_ip => "127.0.0.1",
       :socket_backlog => 1024
     }
   end
