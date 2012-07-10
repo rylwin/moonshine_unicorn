@@ -17,4 +17,4 @@ namespace :unicorn do
   end
 
 end
-after 'deploy', 'unicorn:upgrade'
+after 'deploy:restart', 'unicorn:upgrade'
