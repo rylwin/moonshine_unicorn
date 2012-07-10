@@ -6,7 +6,7 @@ preload_app <%= configuration[:unicorn][:preload_app] ? "true" : "false" %>
 
 timeout <%= configuration[:unicorn][:timeout] %>
 
-pid '<%= configuration[:unicorn][:pid_file] || "#{configuration[:deploy_to]}/shared/pids/unicorn.pid" %>'
+pid '<%= pid_file = (configuration[:unicorn][:pid_file] || "#{configuration[:deploy_to]}/shared/pids/unicorn.pid") %>'
 
 listen '<%= configuration[:unicorn][:socket_ip] %>:<%= configuration[:unicorn][:port] %>', 
   :backlog => <%= configuration[:unicorn][:socket_backlog] %>
@@ -31,7 +31,7 @@ before_fork do |server, worker|
   #
   # Using this method we get 0 downtime deploys.
 
-  old_pid = RAILS_ROOT + '/tmp/pids/unicorn.pid.oldbin'
+  old_pid = pidfile + '.old'
   if File.exists?(old_pid) && server.pid != old_pid
     begin
       Process.kill("QUIT", File.read(old_pid).to_i)
