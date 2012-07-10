@@ -62,7 +62,6 @@ end
 def change_privs(user,group, opts={})
   worker=opts[:worker]
   uid, gid = Process.euid, Process.egid
-  user, group = 'rails', 'rails'
   target_uid = Etc.getpwnam(user).uid
   target_gid = Etc.getgrnam(group).gid
   worker.tmp.chown(target_uid, target_gid)
