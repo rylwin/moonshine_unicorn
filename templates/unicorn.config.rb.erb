@@ -56,7 +56,7 @@ after_fork do |server, worker|
   # drop the workers to git:git
 
   change_privs("<%= configuration[:user] %>","<%= configuration[:group] || configuration[:user] %>",
-    :worker => worker) if rails_env=="production"
+    :worker => worker) 
 end
 
 def change_privs(user,group, opts={})
