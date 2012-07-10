@@ -15,11 +15,15 @@ module Moonshine::Manifest::Unicorn
   end
   
   def unicorn_config
-    file "#{configuration[:deploy_to]}/shared/config/",
-      :ensure => :directory,
-      :owner => configuration[:user],
-      :group => configuration[:group] || configuration[:user],
-      :mode => '775'
+    # Because config is already defined in shared_children, we would
+    # get a Puppet::Resource::Catalog::DuplicateResourceError from this
+    #
+    #file "#{configuration[:deploy_to]}/shared/config/",
+    #  :ensure => :directory,
+    #  :owner => configuration[:user],
+    #  :group => configuration[:group] || configuration[:user],
+    #  :mode => '775'
+
     file "#{configuration[:deploy_to]}/shared/config/unicorn.rb",
       :ensure => :present,
       :content => template(File.join(File.dirname(__FILE__), '..','templates', 'unicorn.config.rb.erb')),
