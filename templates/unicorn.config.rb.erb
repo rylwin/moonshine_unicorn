@@ -8,6 +8,8 @@ timeout <%= configuration[:unicorn][:timeout] %>
 
 pid '<%= pid_file = (configuration[:unicorn][:pid_file] || "#{configuration[:deploy_to]}/shared/pids/unicorn.pid") %>'
 
+stderr_path '<%= pid_file = (configuration[:unicorn][:stderr_path] || "#{configuration[:deploy_to]}/shared/log/unicorn.log") %>'
+
 listen '<%= configuration[:unicorn][:socket_ip] %>:<%= configuration[:unicorn][:port] %>', 
   :backlog => <%= configuration[:unicorn][:socket_backlog] %>
 
