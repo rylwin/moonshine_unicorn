@@ -1,5 +1,7 @@
 rails_env = '<%= configuration[:unicorn][:rails_env] || ENV['RAILS_ENV'] || 'production' %>'
 
+working_directory '<%= configuration[:deploy_to] %>/current'
+
 worker_processes <%= configuration[:unicorn][:workers] %>
 
 preload_app <%= configuration[:unicorn][:preload_app] ? "true" : "false" %>
