@@ -23,6 +23,10 @@ if GC.respond_to?(:copy_on_write_friendly=)
   GC.copy_on_write_friendly = true
 end
 
+before_exec do |server|
+  ENV["BUNDLE_GEMFILE"] = "<%= configuration[:deploy_to] %>/current/Gemfile"
+end
+
 before_fork do |server, worker|
   ##
   # When sent a USR2, Unicorn will suffix its pidfile with .oldbin and
