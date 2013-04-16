@@ -1,10 +1,11 @@
 module Moonshine::Manifest::Unicorn
-  
+
   def self.included(manifest)
     default_port=8080
     manifest.configure :unicorn => {
       :port => default_port,
       :rails_env => "production",
+      :ruby_binary => "ruby",
       :workers => 1,
       :preload_app => true,
       :timeout => 60,
@@ -13,7 +14,7 @@ module Moonshine::Manifest::Unicorn
       :socket_backlog => 1024
     }
   end
-  
+
   def unicorn_config
     # Because config is already defined in shared_children, we would
     # get a Puppet::Resource::Catalog::DuplicateResourceError from this
@@ -30,7 +31,7 @@ module Moonshine::Manifest::Unicorn
       # :notify => service("apache2"),
       :alias => "unicorn_config"
   end
-  
+
   def unicorn_master
     file "#{configuration[:deploy_to]}/shared/binary/",
       :ensure => :directory,
@@ -48,7 +49,7 @@ module Moonshine::Manifest::Unicorn
       :owner => configuration[:user],
       :group => configuration[:group] || configuration[:user],
       :mode    => '744'
-      
+
     file '/etc/init.d/unicorn',
       :content => template(File.join(File.dirname(__FILE__), '..', 'templates', 'unicorn.init.erb'), binding),
       :mode    => '744'
@@ -58,7 +59,7 @@ module Moonshine::Manifest::Unicorn
       :ensure  => :running,
       :require => file('/etc/init.d/unicorn')
   end
-  
+
   def unicorn_stack
     recipe :apache_server
     recipe :unicorn_site
@@ -75,18 +76,18 @@ module Moonshine::Manifest::Unicorn
     recipe :rails_rake_environment, :rails_gems, :rails_directories, :rails_bootstrap, :rails_migrations, :rails_logrotate
     recipe :ntp, :time_zone, :postfix, :cron_packages, :motd, :security_updates, :apt_sources, :hostname
 
-    if configuration[:assets] && (configuration[:assets][:enabled] || configuration[:assets][:precompile])
+    if configuration[:assets] && (configuration[:assets][:enabled] && configuration[:assets][:precompile])
       recipe :rails_asset_pipeline
     end
   end
-  
+
   # Creates and enables a vhost configuration named after your application.
   # Also ensures that the <tt>000-default</tt> vhost is disabled.
   def unicorn_site
     a2enmod "proxy"
     a2enmod "proxy_http"
     a2enmod "proxy_balancer"
-      
+
     file "/etc/apache2/sites-available/#{configuration[:application]}",
       :ensure => :present,
       :content => template(File.join(File.dirname(__FILE__), '..','templates', 'unicorn.vhost.erb')),
@@ -97,9 +98,9 @@ module Moonshine::Manifest::Unicorn
     a2dissite '000-default', :require => file("unicorn_vhost")
     a2ensite configuration[:application], :require => file("unicorn_vhost")
   end
-  
+
   private
-  
+
   def a2enmod(mod, options = {})
     exec("a2enmod #{mod}", {
         :command => "/usr/sbin/a2enmod #{mod}",
@@ -109,7 +110,7 @@ module Moonshine::Manifest::Unicorn
       }.merge(options)
     )
   end
-  
+
   # Symlinks a site from <tt>/etc/apache2/sites-enabled/site</tt> to
   #<tt>/etc/apache2/sites-available/site</tt>. Creates
   #<tt>exec("a2ensite #{site}")</tt>.
@@ -135,5 +136,5 @@ module Moonshine::Manifest::Unicorn
       }.merge(options)
     )
   end
-  
+
 end
